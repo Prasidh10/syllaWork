@@ -2,16 +2,21 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: join(__dirname, '.env') });
 
 const app = express();
 const port = process.env.PORT || 5000;
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
 // Middleware
 app.use(cors());
@@ -28,15 +33,12 @@ app.post('/api/chat', async (req, res) => {
     const { message } = req.body;
     console.log('Received message:', message);
     
-    const result = await model.generateContent(message);
-    console.log('Generated result:', result);
-    
+    const chat = model.startChat();
+    const result = await chat.sendMessage(message);
     const response = await result.response;
-    console.log('Response:', response);
-    
     const text = response.text();
-    console.log('Final text:', text);
-
+    
+    console.log('Response:', text);
     res.json({ response: text });
   } catch (error) {
     console.error('Detailed error:', error);
